@@ -10,7 +10,7 @@ PYTHON = python
 # Settings
 #
 
-IMPLS = bash c clojure coffee cpp cs erlang factor forth go groovy \
+IMPLS = bash c clojure coffee cpp cs elixir erlang factor forth go groovy \
 	haskell java julia js lua make mal ocaml matlab miniMAL nim \
 	perl php ps python r racket ruby rust scala swift vb guile
 
@@ -58,6 +58,7 @@ clojure_STEP_TO_PROG = clojure/src/$($(1)).clj
 coffee_STEP_TO_PROG =  coffee/$($(1)).coffee
 cpp_STEP_TO_PROG =     cpp/$($(1))
 cs_STEP_TO_PROG =      cs/$($(1)).exe
+elixir_STEP_TO_PROG =  elixir/$($(1)).ex
 erlang_STEP_TO_PROG =  erlang/$($(1))
 factor_STEP_TO_PROG =  factor/src/$($(1))/$($(1)).factor
 forth_STEP_TO_PROG =   forth/$($(1)).fs
@@ -99,6 +100,7 @@ clojure_RUNSTEP = lein with-profile +$(1) trampoline run $(3)
 coffee_RUNSTEP =  coffee ../$(2) $(3)
 cpp_RUNSTEP =     ../$(2) $(3)
 cs_RUNSTEP =      mono ../$(2) --raw $(3)
+elixir_RUNSTEP =  elixir ../$(2) $(3)
 erlang_RUNSTEP =  ../$(2) $(3)
 factor_RUNSTEP =  factor ../$(2) $(3)
 forth_RUNSTEP =   gforth ../$(2) $(3)
@@ -140,9 +142,9 @@ DO_IMPLS = $(filter-out $(SKIP_IMPLS),$(IMPLS))
 IMPL_TESTS = $(foreach impl,$(DO_IMPLS),test^$(impl))
 STEP_TESTS = $(foreach step,$(STEPS),test^$(step))
 ALL_TESTS = $(filter-out $(EXCLUDE_TESTS),\
-              $(strip $(sort \
-                $(foreach impl,$(DO_IMPLS),\
-                  $(foreach step,$(STEPS),test^$(impl)^$(step))))))
+							$(strip $(sort \
+								$(foreach impl,$(DO_IMPLS),\
+									$(foreach step,$(STEPS),test^$(impl)^$(step))))))
 
 IMPL_STATS = $(foreach impl,$(DO_IMPLS),stats^$(impl))
 IMPL_STATS_LISP = $(foreach impl,$(DO_IMPLS),stats-lisp^$(impl))
@@ -171,13 +173,13 @@ $(STEP_TESTS): $$(foreach step,$$(subst test^,,$$@),$$(filter %^$$(step),$$(ALL_
 .SECONDEXPANSION:
 $(ALL_TESTS): $$(call $$(word 2,$$(subst ^, ,$$(@)))_STEP_TO_PROG,$$(word 3,$$(subst ^, ,$$(@))))
 	@$(foreach impl,$(word 2,$(subst ^, ,$(@))),\
-	  $(foreach step,$(word 3,$(subst ^, ,$(@))),\
-	    cd $(if $(filter mal,$(impl)),$(MAL_IMPL),$(impl)); \
-	    $(foreach test,$(call STEP_TEST_FILES,$(impl),$(step)),\
-	      echo '----------------------------------------------'; \
-	      echo 'Testing $@, step file: $+, test file: $(test)'; \
-	      echo 'Running: ../runtest.py $(call $(impl)_TEST_OPTS) ../$(test) -- $(call $(impl)_RUNSTEP,$(step),$(+))'; \
-	      ../runtest.py $(call $(impl)_TEST_OPTS) ../$(test) -- $(call $(impl)_RUNSTEP,$(step),$(+));)))
+		$(foreach step,$(word 3,$(subst ^, ,$(@))),\
+			cd $(if $(filter mal,$(impl)),$(MAL_IMPL),$(impl)); \
+			$(foreach test,$(call STEP_TEST_FILES,$(impl),$(step)),\
+				echo '----------------------------------------------'; \
+				echo 'Testing $@, step file: $+, test file: $(test)'; \
+				echo 'Running: ../runtest.py $(call $(impl)_TEST_OPTS) ../$(test) -- $(call $(impl)_RUNSTEP,$(step),$(+))'; \
+				../runtest.py $(call $(impl)_TEST_OPTS) ../$(test) -- $(call $(impl)_RUNSTEP,$(step),$(+));)))
 
 test: $(ALL_TESTS)
 tests: $(ALL_TESTS)
@@ -192,15 +194,15 @@ stats-lisp: $(IMPL_STATS_LISP)
 $(IMPL_STATS):
 	@echo "----------------------------------------------"; \
 	$(foreach impl,$(word 2,$(subst ^, ,$(@))),\
-	  echo "Stats for $(impl):"; \
-	  $(MAKE) --no-print-directory -C $(impl) stats)
+		echo "Stats for $(impl):"; \
+		$(MAKE) --no-print-directory -C $(impl) stats)
 
 .SECONDEXPANSION:
 $(IMPL_STATS_LISP):
 	@echo "----------------------------------------------"; \
 	$(foreach impl,$(word 2,$(subst ^, ,$(@))),\
-	  echo "Stats (lisp only) for $(impl):"; \
-	  $(MAKE) --no-print-directory -C $(impl) stats-lisp)
+		echo "Stats (lisp only) for $(impl):"; \
+		$(MAKE) --no-print-directory -C $(impl) stats-lisp)
 
 
 # Performance test rules
@@ -211,11 +213,11 @@ perf: $(IMPL_PERF)
 $(IMPL_PERF):
 	@echo "----------------------------------------------"; \
 	$(foreach impl,$(word 2,$(subst ^, ,$(@))),\
-	  cd $(if $(filter mal,$(impl)),$(MAL_IMPL),$(impl)); \
-	  echo "Performance test for $(impl):"; \
-	  echo 'Running: $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf1.mal)'; \
-          $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf1.mal); \
-	  echo 'Running: $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf2.mal)'; \
-          $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf2.mal); \
-	  echo 'Running: $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf3.mal)'; \
-          $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf3.mal))
+		cd $(if $(filter mal,$(impl)),$(MAL_IMPL),$(impl)); \
+		echo "Performance test for $(impl):"; \
+		echo 'Running: $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf1.mal)'; \
+					$(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf1.mal); \
+		echo 'Running: $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf2.mal)'; \
+					$(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf2.mal); \
+		echo 'Running: $(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf3.mal)'; \
+					$(call $(impl)_RUNSTEP,stepA,$(call $(impl)_STEP_TO_PROG,stepA),../tests/perf3.mal))
